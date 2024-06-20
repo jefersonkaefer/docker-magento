@@ -10,7 +10,7 @@ RUN if [ $(uname -m) = "x86_64" ]; then mailhog_arch="amd64"; else mailhog_arch=
     && go get . \
     && GOOS=linux GOARCH=${mailhog_arch} go build -o mhsendmail .
 
-FROM arm64v8/php:8.2-fpm as php
+FROM arm64v8/php:7.4-fpm as php
 
 ARG MAGENTO_ROOT=/home/magento
 
@@ -29,6 +29,7 @@ ENV PHP_EXTENSIONS bcmath bz2 calendar exif gd gettext intl mysqli opcache pdo_m
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
+  cron \
   apt-utils \
   sendmail-bin \
   sendmail \
@@ -99,16 +100,9 @@ RUN pecl install -o -f \
   pcov \
   raphf \
   redis \
-  xdebug-3.2.2 \
-  xmlrpc-1.0.0RC3 \
+  yaml \
+  xdebug-3.1.5 \
   yaml
-
-#RUN curl -L https://packages.blackfire.io/gpg.key | gpg --dearmor > blackfire.io-archive-keyring.gpg \
-#  && install -o root -g root -m 644 blackfire.io-archive-keyring.gpg /etc/apt/trusted.gpg.d/ \
-#  && echo "deb http://packages.blackfire.io/debian any main" | tee /etc/apt/sources.list.d/blackfire.list \
-#  && apt-get update \
-#  && apt-get install blackfire-php \
-#  && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
 RUN apt-get update
@@ -128,7 +122,8 @@ RUN groupadd -g 2000 magento && useradd -g 2000 -u 2000 -d ${MAGENTO_ROOT} -s /b
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN ["chmod", "+x", "/docker-entrypoint.sh"]
-
+COPY ./scripts/magento-install.sh /usr/local/bin/magento-install.sh
+RUN ["chmod", "+x", "/usr/local/bin/magento-install.sh"]
 RUN mkdir -p ${MAGENTO_ROOT}
 
 VOLUME ${MAGENTO_ROOT}
@@ -136,6 +131,8 @@ VOLUME ${MAGENTO_ROOT}
 RUN chown -R magento:magento /usr/local /var/www /var/log /usr/local/etc/php/conf.d ${MAGENTO_ROOT}
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
+
+COPY auth.json /root/.composer/
 
 WORKDIR ${MAGENTO_ROOT}
 

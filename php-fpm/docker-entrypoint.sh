@@ -3,7 +3,7 @@
 [ "$DEBUG" = "true" ] && set -x
 
 PHP_EXT_DIR=/usr/local/etc/php/conf.d
-
+MAGENTO_DIR=/home/magento/
 # Enable PHP extensions
 PHP_EXT_COM_ON=docker-php-ext-enable
 
